@@ -1,0 +1,96 @@
+{
+  "method": "Chromium headless + SwiftShader; 10 aquecimentos e 40 amostras por estado; readPixels síncrono de 1 pixel central; mesma janela 420x650",
+  "browser": "156.0.8078.73",
+  "results": [
+    {
+      "dpr": 1,
+      "renderer": true,
+      "frames": 153,
+      "state": "annoyed",
+      "triangles": 46780,
+      "calls": 53,
+      "clips": [
+        "Acenar",
+        "Pensar",
+        "Reclamar",
+        "Dormir",
+        "Falar"
+      ],
+      "buffer": [
+        390,
+        365
+      ],
+      "context": {
+        "alpha": true,
+        "antialias": true,
+        "depth": true,
+        "desynchronized": false,
+        "failIfMajorPerformanceCaveat": false,
+        "powerPreference": "default",
+        "premultipliedAlpha": true,
+        "preserveDrawingBuffer": true,
+        "stencil": false,
+        "xrCompatible": false
+      },
+      "samples": {
+        "idle": {
+          "medianMs": 15.699999999254942,
+          "p95Ms": 22.600000001490116
+        },
+        "wave": {
+          "medianMs": 14.800000000745058,
+          "p95Ms": 22.200000001117587
+        },
+        "annoyed": {
+          "medianMs": 13.900000000372529,
+          "p95Ms": 18.59999999962747
+        }
+      }
+    },
+    {
+      "dpr": 2,
+      "renderer": true,
+      "frames": 153,
+      "state": "annoyed",
+      "triangles": 46780,
+      "calls": 53,
+      "clips": [
+        "Acenar",
+        "Pensar",
+        "Reclamar",
+        "Dormir",
+        "Falar"
+      ],
+      "buffer": [
+        663,
+        620
+      ],
+      "context": {
+        "alpha": true,
+        "antialias": true,
+        "depth": true,
+        "desynchronized": false,
+        "failIfMajorPerformanceCaveat": false,
+        "powerPreference": "default",
+        "premultipliedAlpha": true,
+        "preserveDrawingBuffer": true,
+        "stencil": false,
+        "xrCompatible": false
+      },
+      "samples": {
+        "idle": {
+          "medianMs": 20.59999999962747,
+          "p95Ms": 23.799999998882413
+        },
+        "wave": {
+          "medianMs": 21.299999998882413,
+          "p95Ms": 26.700000001117587
+        },
+        "annoyed": {
+          "medianMs": 19.5,
+          "p95Ms": 21.90000000037253
+        }
+      }
+    }
+  ]
+}

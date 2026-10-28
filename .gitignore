@@ -1,0 +1,20 @@
+node_modules/
+dist/
+test-results/
+*.log
+.env
+.env.*
+!.env.example
+settings.json
+
+# Preferências de IA podem conter chave cifrada; não distribuir.
+ai.json
+window.json
+
+# Checkpoints privados e configurações de ferramentas locais.
+RETOMAR.md
+.agents/
+.codex/
+.aws/
+*.pem
+*.key

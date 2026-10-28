@@ -1,0 +1,29 @@
+{
+  "name": "mini-eneas",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Caricatura 3D interativa de desktop — protótipo local independente.",
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:visual": "node scripts/test-visual.mjs",
+    "test:performance": "node scripts/benchmark.mjs",
+    "test:chat": "node scripts/test-chat-ui.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/three": "0.186.0",
+    "electron": "45.0.0",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.64.1",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

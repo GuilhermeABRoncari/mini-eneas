@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Mini Enéas · protótipo 3D</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <section class="stage" aria-label="Personagem 3D interativo">
+      <header class="drag-bar"><span class="brand">é<span>.</span></span><span class="drag-hint">SEGURE AQUI PARA MOVER</span><button id="hide" title="Minimizar" aria-label="Minimizar">−</button><button id="close" title="Encerrar" aria-label="Encerrar">×</button></header>
+      <div class="stage-heading"><span class="eyebrow">PRESENÇA DE ESPÍRITO, EM MINIATURA</span><h1>Uma figura.<br>Várias opiniões.</h1><p>Enéas, em sua versão de companhia.</p></div>
+      <div id="viewport" role="button" tabindex="0" aria-label="Cutucar o mini Enéas" aria-describedby="gesture-hint"><div id="render-error" hidden></div><span class="sleep-mark" aria-hidden="true">z z Z</span><span class="dizzy-mark" aria-hidden="true">✦ · ✧ · ✦</span></div>
+      <div class="character-caption"><span class="status-dot"></span><span id="status" role="status">De olho no movimento</span><span class="edition">PROTÓTIPO 01</span></div>
+      <div id="speech" role="status">Meu nome é Enéas! Pode me cutucar. Com moderação.</div>
+      <div class="quick-actions"><button data-action="wave">👋 Acenar</button><button id="poke">👉 Cutucar</button><button data-action="sleep">💤 Descansar</button><button id="panel-toggle" aria-expanded="false" aria-controls="inspector">☷ Opções</button></div>
+      <p id="gesture-hint">↻ Rodinha: girar · Ctrl + rodinha: tamanho</p>
+    </section>
+    <aside id="inspector" aria-label="Controles do protótipo" hidden>
+      <div class="panel-heading"><span class="eyebrow">ESTÚDIO DO PERSONAGEM</span><h2>Pequeno no tamanho.<br>Grande no temperamento.</h2><p>Caricatura 3D original, articulada e animada em tempo real.</p></div>
+      <section class="control-card"><h3>Experimente uma reação</h3><div class="reaction-grid"><button data-action="idle">◎ Observar</button><button data-action="wave">👋 Acenar</button><button data-action="think">💭 Pensar</button><button data-action="annoyed">😤 Reclamar</button><button data-action="speak">💬 Falar</button><button data-action="sleep">💤 Dormir</button></div><p class="hint">Três cutucadas rápidas testam a paciência dele.</p></section>
+      <section class="control-card"><h3>Do seu jeito</h3><label for="angle">Girar o boneco <output id="angle-value">0°</output></label><input id="angle" type="range" min="0" max="360" value="0"><label for="size">Tamanho <output id="size-value">100%</output></label><input id="size" type="range" min="65" max="125" value="100"><label class="check"><input id="quiet" type="checkbox"> Modo sossego</label><p class="hint">Sem provocações espontâneas ou áudio nesta versão.</p></section>
+      <section class="control-card chat-card"><h3>Uma conversa com personalidade</h3><p id="chat-mode" class="mode-badge">🧪 Demonstração local</p><p id="chat-description" class="hint">Falas locais, sem IA conectada.</p><div id="chat-log" aria-live="polite"></div><form id="chat"><input id="message" aria-label="Mensagem" maxlength="2000" placeholder="Diga alguma coisa…" autocomplete="off"><button id="chat-send" type="submit" aria-label="Enviar mensagem">↑</button></form><p id="chat-status" role="status" class="hint"></p><div class="chat-actions"><button id="chat-cancel" hidden>■ Interromper</button><button id="chat-clear">Limpar conversa</button></div>
+      <details id="ai-configuration"><summary>⚙ Configurar conversa com IA</summary><form id="ai-settings">
+        <label for="ai-provider">Onde conversar</label><select id="ai-provider"><option value="demo">Demonstração · sem IA</option><option value="ollama">Ollama · servidor local</option><option value="openai">OpenAI · API</option></select>
+        <div id="ai-local-fields" hidden><label for="ai-address">Endereço local do Ollama</label><input id="ai-address" value="http://127.0.0.1:11434" maxlength="200" spellcheck="false"><p class="hint">O Ollama e o modelo precisam estar instalados. Este aplicativo não instala nem baixa modelos.</p></div>
+        <div id="ai-model-fields" hidden><label for="ai-model">Modelo</label><input id="ai-model" list="ai-model-list" maxlength="160" placeholder="Nome do modelo no provedor" spellcheck="false"><datalist id="ai-model-list"></datalist><p class="hint">Aplique a configuração e use “Listar modelos” para consultar. Escolha um modelo de texto disponível para você e aplique novamente.</p></div>
+        <div id="ai-key-fields" hidden><label for="ai-key">Chave da API OpenAI</label><input id="ai-key" type="password" autocomplete="off" maxlength="4096" placeholder="Cole sua chave da API"><label class="check"><input id="ai-remember" type="checkbox"> Lembrar chave com o chaveiro do sistema</label><p class="hint">A API pode ter cobrança própria. Uma assinatura de chat não configura esta integração.</p></div>
+        <label for="ai-temperament">Temperamento da conversa</label><select id="ai-temperament"><option value="calmo">Calmo e bem-humorado</option><option value="dramatico">Dramático e enfático</option><option value="impaciente">Impaciente de brincadeira</option></select>
+        <p id="ai-storage" class="hint"></p><div class="ai-actions"><button type="submit">✓ Aplicar configuração</button><button id="ai-models-button" type="button">Listar modelos</button><button id="ai-forget" type="button">Esquecer chave</button></div>
+      </form></details></section>
+      <footer><button id="export">↓ Exportar modelo GLB</button><p id="connection-note">Demonstração sem IA. Telegram e DevStack ainda não conectados.</p></footer>
+    </aside>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
