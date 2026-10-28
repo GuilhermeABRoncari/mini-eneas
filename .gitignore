@@ -18,3 +18,11 @@ RETOMAR.md
 .aws/
 *.pem
 *.key
+
+# Runtime local de microfone e voz
+.voice/
+models/
+bin/
+data/
+__pycache__/
+assets/eneas-source.wav

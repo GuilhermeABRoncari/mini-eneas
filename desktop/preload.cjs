@@ -17,3 +17,13 @@ contextBridge.exposeInMainWorld('eneasAi',{
     return ()=>ipcRenderer.removeListener('mini:ai-event',listener);
   },
 });
+
+contextBridge.exposeInMainWorld('eneasAudio', {
+  command: value => ipcRenderer.invoke('mini:audio-command', value),
+  onEvent: callback => {
+    if(typeof callback !== 'function') return () => {};
+    const listener=(_event,value)=>callback(value);
+    ipcRenderer.on('mini:audio-event',listener);
+    return ()=>ipcRenderer.removeListener('mini:audio-event',listener);
+  },
+});

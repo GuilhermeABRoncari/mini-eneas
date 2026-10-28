@@ -1,12 +1,14 @@
+import { initializeAudio } from './audio-ui.ts';
 import type { AiBridge, AiEvent, AiSettings, Provider, Temperament } from './ai/contracts.ts';
-export interface ChatHooks { demo(text:string):string; phase(phase:'thinking'|'delta'|'done'|'error'|'cancelled',text:string):void }
+export interface ChatHooks { demo(text:string):string; audio?(speaking:boolean):void; phase(phase:'thinking'|'delta'|'done'|'error'|'cancelled',text:string):void }
 export function initializeChat(bridge:AiBridge|undefined,hooks:ChatHooks) {
   const $=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
   const log=$('chat-log'),input=$<HTMLInputElement>('message'),form=$<HTMLFormElement>('ai-settings');
   const provider=$<HTMLSelectElement>('ai-provider'),model=$<HTMLInputElement>('ai-model'),address=$<HTMLInputElement>('ai-address'),key=$<HTMLInputElement>('ai-key'),remember=$<HTMLInputElement>('ai-remember');
   let settings:AiSettings={provider:'demo',model:'',ollamaUrl:'http://127.0.0.1:11434',temperament:'dramatico',hasKey:false,rememberKey:false,storageNotice:'Chaves ficam nesta sessão.'};
   let activeId:string|undefined,reply:HTMLParagraphElement|undefined,replyText:Text|undefined,configuring=false,ready=!bridge,dirty=false;
-  const label=()=>settings.provider==='demo'?'Demonstração':settings.provider==='ollama'?'Ollama':'OpenAI';
+  const audio=initializeAudio(submit,speaking=>hooks.audio?.(speaking));
+  const label=()=>settings.provider==='demo'?'Demonstração':settings.provider==='local'?'IA local':settings.provider==='ollama'?'Ollama':'OpenAI';
   function controls(){
     const busy=!!activeId||configuring||!ready;
     for(const control of form.querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('input,select,button'))control.disabled=busy||!bridge;
@@ -18,11 +20,11 @@ export function initializeChat(bridge:AiBridge|undefined,hooks:ChatHooks) {
   function status(text:string,error=false){$('chat-status').textContent=text;$('chat-status').classList.toggle('error',error);}
   function mode(){
     $('chat-mode').textContent=settings.provider==='demo'?'🧪 Demonstração local':`🧠 ${label()} · ${settings.model||'modelo não escolhido'}`;
-    $('chat-description').textContent=settings.provider==='demo'?'Falas locais, sem IA conectada. Experimente “oi”, “pensar” ou “dormir”.':settings.provider==='openai'?'Mensagem e contexto recente serão enviados à OpenAI. O uso da API pode ter cobrança.':'Mensagem e contexto recente serão enviados ao servidor Ollama configurado neste computador.';
-    $('connection-note').textContent=settings.provider==='demo'?'Demonstração sem IA. Telegram e DevStack ainda não conectados.':`Conversa por ${label()}. Sem voz, Telegram ou DevStack.`;
+    $('chat-description').textContent=settings.provider==='demo'?'Falas locais, sem IA conectada. Experimente “oi”, “pensar” ou “dormir”.':settings.provider==='local'?'Conversa e voz processadas neste computador.':settings.provider==='openai'?'Mensagem e contexto recente serão enviados à OpenAI. O uso da API pode ter cobrança.':'Mensagem e contexto recente serão enviados ao servidor Ollama configurado neste computador.';
+    $('connection-note').textContent=settings.provider==='demo'?'Demonstração sem IA. Telegram e DevStack ainda não conectados.':`Conversa por ${label()}. Microfone e voz locais. Telegram e DevStack não conectados.`;
   }
   function visibility(){
-    $('ai-local-fields').hidden=provider.value!=='ollama';$('ai-key-fields').hidden=provider.value!=='openai';$('ai-model-fields').hidden=provider.value==='demo';
+    $('ai-local-fields').hidden=provider.value!=='ollama';$('ai-key-fields').hidden=provider.value!=='openai';$('ai-model-fields').hidden=['demo','local'].includes(provider.value);
   }
   function populate(){
     provider.value=settings.provider;model.value=settings.model;address.value=settings.ollamaUrl;
@@ -40,11 +42,11 @@ export function initializeChat(bridge:AiBridge|undefined,hooks:ChatHooks) {
     if(value.type==='delta'||value.type==='done'){
       const text=typeof value.text==='string'?value.text.slice(0,12000):'';
       if(replyText)replyText.data=text;log.scrollTop=log.scrollHeight;hooks.phase(value.type,text);
-      if(value.type==='done'){status('✓ Resposta concluída.');finish();}else status('✍ Respondendo…');
+      if(value.type==='done'){status('✓ Resposta concluída.');audio.speak(text);finish();}else status('✍ Respondendo…');
     }else if(value.type==='error'||value.type==='cancelled'){
       const message=value.message||'Não foi possível concluir a resposta.';
       if(replyText&&!replyText.data)replyText.data=value.type==='cancelled'?'Resposta interrompida.':'Não houve resposta.';
-      reply?.classList.add('partial');status(message,value.type==='error');hooks.phase(value.type,message);finish();
+      reply?.classList.add('partial');status(message,value.type==='error');hooks.phase(value.type,message);audio.busy(false);finish();
     }
   }
   bridge?.onEvent(event);
@@ -71,13 +73,16 @@ export function initializeChat(bridge:AiBridge|undefined,hooks:ChatHooks) {
     try{settings=await bridge.save({...settings,key:'',rememberKey:false,forgetKey:true});log.replaceChildren();populate();status('✓ Chave removida da sessão e da configuração salva.');}
     catch(error){status(error instanceof Error?error.message:'Não foi possível remover a chave.',true);}finally{configuring=false;controls();}
   });
-  $('chat').addEventListener('submit',async e=>{
-    e.preventDefault();const text=input.value.trim();if(!text||activeId||configuring||!ready)return;
-    if(settings.provider==='demo'){append('Você',text);append('Enéas · demonstração',hooks.demo(text));input.value='';return;}
-    if(!bridge){status('Abra pelo aplicativo desktop para conectar uma IA.',true);return;}
+  function submit(text:string):boolean {
+    text=text.trim().slice(0,2000);if(!text||activeId||configuring||!ready)return false;
+    audio.busy(true);
+    if(settings.provider==='demo'){append('Você',text);const response=hooks.demo(text);append('Enéas · demonstração',response);audio.speak(response);input.value='';return true;}
+    if(!bridge){status('Abra pelo aplicativo desktop para conectar uma IA.',true);audio.busy(false);return false;}
     activeId=crypto.randomUUID();const id=activeId;append('Você',text);[reply,replyText]=append('Enéas · '+label(),'');input.value='';controls();status('Enviando…');
-    try{await bridge.start(id,text);}catch(error){event({id,type:'error',message:error instanceof Error?error.message:'Não foi possível iniciar a conversa.'});}
-  });
+    void bridge.start(id,text).catch(error=>event({id,type:'error',message:error instanceof Error?error.message:'Não foi possível iniciar a conversa.'}));
+    return true;
+  }
+  $('chat').addEventListener('submit',e=>{e.preventDefault();submit(input.value);});
   $('chat-cancel').addEventListener('click',async()=>{
     if(!bridge||!activeId)return;status('Interrompendo…');
     try{await bridge.cancel(activeId);}catch{status('Não foi possível interromper. A solicitação tem limite de dois minutos.',true);}

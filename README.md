@@ -99,7 +99,7 @@ O desenho é uma primeira caricatura e pode ser refinado. As falas são fictíci
 
 1. Homologar o provedor/modelo escolhido pelo usuário; não há teste de inferência real feito nesta etapa.
 2. Ampliar personalidade, memória explícita e iniciativa controlada.
-3. Telegram, voz e refinamento das animações.
+3. Telegram e refinamento das animações.
 4. Homologar Omarchy/Hyprland.
 5. Conectar ao DevStack por MCP como etapa final.
 
@@ -149,7 +149,7 @@ O Ollama precisa estar instalado e com modelo disponível; o aplicativo não ins
 
 A solicitação inclui a pergunta, instruções da caricatura e até seis turnos completos recentes, também limitados por tamanho. Não inclui tela, arquivos, inventário de scripts ou conversas do Telegram. Conteúdo é exibido como texto, sem HTML executável. O backend é responsável pelo histórico; o renderer não fornece mensagens de sistema nem ferramentas.
 
-O endpoint OpenAI é fixo em `https://api.openai.com/v1/responses`, com `store: false` e streaming SSE. Isso desabilita o armazenamento da resposta nessa API; não equivale a uma promessa sobre todos os registros/retenções do provedor. Ollama usa `/api/chat` com NDJSON. Não há ferramentas, execução de comandos, voz ou acesso autônomo a outras aplicações nesta etapa.
+O endpoint OpenAI é fixo em `https://api.openai.com/v1/responses`, com `store: false` e streaming SSE. Isso desabilita o armazenamento da resposta nessa API; não equivale a uma promessa sobre todos os registros/retenções do provedor. Ollama usa `/api/chat` com NDJSON. Não há ferramentas ou acesso autônomo a outras aplicações. O microfone e a voz usam processos locais controlados pelo aplicativo.
 
 Limites: uma geração por vez, 2.000 caracteres por pergunta, 12.000 caracteres de resposta, até dois minutos por solicitação e limite de saída do modelo (OpenAI: 1.024 tokens; Ollama: 512 tokens previstos, contexto 4.096). Respostas incompletas, com erro ou canceladas não entram no contexto seguinte. O trecho parcial permanece identificado na interface até limpar ou encerrar. O balão mostra um resumo visual de até 240 caracteres; o texto completo fica no painel.
 
@@ -170,3 +170,52 @@ A ponte Electron mantém os pedidos no processo principal, com IPC restrito à j
 Nenhuma chave real ou provedor de inferência real foi usado. A prévia `conversa-ia-teste.png` mostra dados fictícios e não comprova inferência de um modelo. Não houve nova dependência, instalação de Ollama, download de modelo ou publicação.
 
 Referências: [OpenAI Docs — streaming](https://developers.openai.com/api/docs/guides/streaming-responses), [Responses e store](https://developers.openai.com/api/docs/guides/migrate-to-responses), [Ollama chat](https://docs.ollama.com/api/chat), [Ollama modelos](https://docs.ollama.com/api/tags), [Electron safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage).
+
+
+## Microfone e voz locais (Linux / PipeWire)
+
+A versão 3D do GitHub agora recebe fala automaticamente e responde por áudio.
+Abra com `./abrir.sh` ou pelo atalho Mini Enéas. Os controles abaixo do boneco
+mostram o nível do microfone, permitem pausar a escuta e desligar a voz. Essas
+preferências são lembradas. Não é necessário clicar em Falar a cada pergunta.
+
+O fluxo é PipeWire → Silero VAD → Whisper em português → provedor escolhido no
+chat → Chatterbox pt-BR → reprodução com mpv. A captura é pausada durante a
+transcrição, a resposta da IA e a reprodução, voltando após o áudio terminar.
+A transcrição aparece no mesmo histórico das mensagens digitadas. Fechar o
+aplicativo encerra também os processos de captura, IA local e voz.
+
+Esta instalação reaproveita `.voice/`, `models/`, `bin/` e os arquivos de voz
+validados em `data/`. Em uma instalação nova, esses diretórios **não vêm no Git**:
+instale Python 3.12 com as dependências de `requirements-voice.lock.txt`, PipeWire
+(`pw-record`), `voxtype`, `ffmpeg` e `mpv`. O runtime espera:
+
+- `.voice/bin/python` com PyTorch CPU, Chatterbox e Silero VAD;
+- `models/ggml-small.bin` e o modelo small configurado no Voxtype;
+- `models/chatterbox/ve.pt` e `models/chatterbox-ptbr/` com `t3_pt_br.safetensors`,
+  `s3gen_v3.pt` e `grapheme_mtl_merged_expanded_v1.json` do modelo oficial
+  [Chatterbox pt-BR](https://huggingface.co/ResembleAI/Chatterbox-Multilingual-pt-br);
+- `assets/eneas-reference.wav`, referência para uma voz sintética inspirada no
+  personagem histórico, sem apresentar novas falas como gravações autênticas;
+- opcionalmente `models/qwen3-1.7b-q4_k_m.gguf` e `bin/llama-b11938/llama-server`
+  com suas bibliotecas, para a opção **Qwen · IA local instalada**.
+
+Quando os modelos Qwen já existem e nenhuma configuração foi salva, a IA local
+é selecionada na primeira abertura. Ollama, OpenAI e demonstração continuam
+selecionáveis. A demonstração usa frases prontas; escolha um provedor de IA para
+respostas livres. No modo Qwen, conversa, transcrição e síntese ficam locais.
+Com um provedor remoto, a transcrição passa a ser uma mensagem enviada a ele.
+
+A voz é verificada por reconhecimento de fala antes de tocar e usa cache. Uma
+resposta inédita pode levar dezenas de segundos na CPU. Falhas são exibidas junto
+ao microfone; detalhes ficam em `data/desktop-audio.log`, `data/voice.log` e
+`data/voice-quality.jsonl`. Trechos reconhecidos usam `data/recording.wav`,
+sobrescrito a cada fala; gravações enquanto a escuta está pausada são descartadas.
+
+Validação: `npm run typecheck`, `npm test` e
+`CHROME_PATH=/usr/bin/chromium npm run test:chat`. O teste de chat também verifica
+transcrição recebida pela ponte, pausa durante a IA, envio para síntese e botões.
+`node scripts/test-audio.mjs` é um teste de integração **com áudio real** que
+exige os modelos e `data/verified-question-fixture.wav`; abre o Electron, verifica
+a captura, transcreve a pergunta gravada, usa a IA local, reproduz sua resposta e
+confere a retomada da escuta. Não usa API paga.

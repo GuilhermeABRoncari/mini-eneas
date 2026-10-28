@@ -143,6 +143,10 @@ $('panel-toggle').addEventListener('click', () => { inspector.hidden = !inspecto
 $('hide').addEventListener('click', () => { if (window.desktop) window.desktop.hide(); else $('speech').textContent = 'Esconder está disponível ao abrir pelo aplicativo desktop.'; });
 $('close').addEventListener('click', () => { if (window.desktop) window.desktop.quit(); else $('speech').textContent = 'Esta é uma prévia. Feche a aba para encerrar.'; });
 initializeChat(window.eneasAi,{
+  audio(speaking){
+    if(speaking){const text=behavior.message;act('speak');behavior.message=text;behavior.until=Infinity;renderStatus();}
+    else if(!chatPhase&&behavior.state==='speak')act('idle');
+  },
   demo(text){behavior.reply(text,performance.now());previousState=undefined;renderStatus();renderLoop.wake();return behavior.message;},
   phase(phase,text){
     const excerpt=text.length>240?text.slice(0,237)+'…':text;

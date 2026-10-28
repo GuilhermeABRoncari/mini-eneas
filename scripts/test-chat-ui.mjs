@@ -40,6 +40,7 @@ try{
     if(method==='cancel')return service.cancel(args[0]);if(method==='clear')return service.clear();throw new Error('Método de teste inválido');
   });
   await page.addInitScript(()=>{
+    window.__audioCommands=[];window.eneasAudio={command:async value=>{window.__audioCommands.push(value);},onEvent:fn=>{window.__audioReceive=fn;return()=>{};}};
     const listeners=new Set();window.__receiveAi=event=>listeners.forEach(fn=>fn(event));
     window.eneasAi={settings:()=>window.__aiInvoke('settings'),save:value=>window.__aiInvoke('save',value),models:()=>window.__aiInvoke('models'),start:(id,text)=>window.__aiInvoke('start',id,text),cancel:id=>window.__aiInvoke('cancel',id),clear:()=>window.__aiInvoke('clear'),onEvent:fn=>{listeners.add(fn);return()=>listeners.delete(fn);}};
   });
@@ -68,7 +69,17 @@ try{
   assert.equal(requests.at(-1).messages.some(m=>m.content==='cancelar'),false,'Turno cancelado não deve ser reenviado');
   await page.getByRole('button',{name:'Limpar conversa',exact:true}).click();assert.equal(await page.locator('#chat-log p').count(),0);
   await send('Olá de novo');await page.getByText('✓ Resposta concluída.',{exact:true}).waitFor();assert.equal(requests.at(-1).messages.length,2);
-  await page.screenshot({path:'previews/conversa-ia-teste.png',fullPage:true});
+  await page.evaluate(()=>window.__audioReceive({event:'transcript',text:'Pergunta recebida pelo microfone'}));
+  await page.getByText('✓ Resposta concluída.',{exact:true}).waitFor();
+  assert.equal(requests.at(-1).messages.at(-1).content,'Pergunta recebida pelo microfone');
+  const audioCommands=await page.evaluate(()=>window.__audioCommands);
+  assert.ok(audioCommands.some(c=>c.command==='busy'&&c.busy===true));
+  assert.ok(audioCommands.some(c=>c.command==='busy'&&c.busy===false),'Erro/cancelamento deve liberar a escuta');
+  assert.ok(audioCommands.some(c=>c.command==='speak'&&c.text==='Primeiro a ideia, depois a execução.'));
+  await page.locator('#microphone-toggle').click();
+  assert.equal(await page.evaluate(()=>window.__audioCommands.at(-1).enabled),false);
+  await page.locator('#voice-toggle').click();
+  assert.equal(await page.evaluate(()=>window.__audioCommands.at(-1).muted),true);
   // Chave inteiramente fictícia; sem chamada à OpenAI ou acesso ao chaveiro real.
   await page.locator('#ai-provider').selectOption('openai');await page.locator('#ai-key').fill('chave-ficticia-de-interface');await page.locator('#ai-remember').check();
   await page.getByRole('button',{name:'✓ Aplicar configuração',exact:true}).click();

@@ -5,7 +5,7 @@ export const DEFAULT_CONFIG: AiConfig = { provider:'demo',model:'',ollamaUrl:'ht
 export function validateConfig(value: unknown): AiConfig {
   if (!value || typeof value !== 'object') throw new AiError('Configuração de IA inválida.');
   const c=value as Record<string,unknown>;
-  if (!['demo','ollama','openai'].includes(String(c.provider)) || !['calmo','dramatico','impaciente'].includes(String(c.temperament))) throw new AiError('Escolha um provedor e um temperamento válidos.');
+  if (!['demo','local','ollama','openai'].includes(String(c.provider)) || !['calmo','dramatico','impaciente'].includes(String(c.temperament))) throw new AiError('Escolha um provedor e um temperamento válidos.');
   if (typeof c.model!=='string' || c.model.length>160 || /[\x00-\x1f\x7f]/.test(c.model)) throw new AiError('Nome de modelo inválido.');
   let url: URL;
   try { url=new URL(String(c.ollamaUrl)); } catch { throw new AiError('Informe o endereço local do Ollama.'); }
@@ -14,7 +14,7 @@ export function validateConfig(value: unknown): AiConfig {
 }
 export function instructions(config: AiConfig): string {
   const tone={calmo:'Seja sereno e bem-humorado.',dramatico:'Use energia teatral, frases enfáticas e humor inteligente.',impaciente:'Seja impaciente de brincadeira e espirituoso, sem insultar ou humilhar.'}[config.temperament];
-  return 'Você é Mini Enéas, uma caricatura fictícia e humorística inspirada em Enéas Carneiro, não a pessoa real. Converse em português brasileiro e ajude com clareza. '+tone+' Prefira respostas curtas e legíveis. Não apresente falas inventadas como citações históricas. Não alegue acesso ao computador, Telegram, arquivos ou ferramentas: nesta versão você só conversa por texto. Não finja ter executado ações. Admita incertezas.';
+  return 'Você é Mini Enéas, uma caricatura fictícia e humorística inspirada em Enéas Carneiro, não a pessoa real. Converse em português brasileiro e ajude com clareza. '+tone+' Prefira respostas curtas e legíveis. Não apresente falas inventadas como citações históricas. Não alegue acesso ao computador, Telegram, arquivos ou ferramentas: nesta versão você conversa por texto e voz. Não finja ter executado ações. Admita incertezas.';
 }
 function httpError(status: number): AiError {
   return new AiError(status===401||status===403?'Acesso recusado. Confira a chave e as permissões.':status===404?'Modelo ou serviço não encontrado. Confira a configuração.':status===429?'O provedor limitou o acesso. Confira a cota e tente depois.':`O provedor não concluiu a solicitação (HTTP ${status}).`);

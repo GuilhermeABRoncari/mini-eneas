@@ -4,3 +4,8 @@
 .mode-badge{font-size:12px;font-weight:600;color:#315f46;margin:0 0 6px;overflow-wrap:anywhere}#chat-log{max-height:190px;white-space:pre-wrap;margin-top:12px}.partial{opacity:.7;border-left:2px solid #bd8d4b;padding-left:8px}.chat-actions,.ai-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chat-actions button,.ai-actions button{font-size:11px;padding:8px 10px}button:disabled{opacity:.5;cursor:default;transform:none}#chat-status.error{color:#a34531}#ai-configuration{margin-top:15px}#ai-configuration summary{cursor:pointer;font-size:12px;font-weight:600;padding:10px 0}#ai-settings{padding-top:6px}#ai-settings label{margin-top:13px;line-height:1.4}#ai-settings input:not([type=checkbox]),#ai-settings select{width:100%;min-width:0;padding:10px;border:1px solid #d7dfd5;border-radius:9px;background:#fffef9;color:#29433d;font:inherit;font-size:12px}#ai-settings .hint{font-size:11px}#ai-settings .check{align-items:flex-start;justify-content:flex-start}#chat-log:empty{display:none}
 
 body.studio .stage{align-self:start}
+
+.audio-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 20px; }
+.audio-controls button { font-size:11px; padding:6px 9px; }
+.audio-controls meter { width:46px; }
+.audio-controls p { flex-basis:100%; font-size:11px; margin:0; color:#496457; }

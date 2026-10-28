@@ -1,0 +1,4 @@
+[whisper]
+model = "small"
+language = "pt"
+threads = 4

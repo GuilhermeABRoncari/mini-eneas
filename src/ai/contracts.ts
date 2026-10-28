@@ -1,4 +1,4 @@
-export type Provider = 'demo' | 'ollama' | 'openai';
+export type Provider = 'demo' | 'local' | 'ollama' | 'openai';
 export type Temperament = 'calmo' | 'dramatico' | 'impaciente';
 export interface AiConfig { provider: Provider; model: string; ollamaUrl: string; temperament: Temperament }
 export interface AiSettings extends AiConfig { hasKey: boolean; rememberKey: boolean; storageNotice: string }

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AiConfig, AiEvent, AiSave, AiSettings } from './contracts.ts';
 import { AiError, AiTransport, DEFAULT_CONFIG, validateConfig, type Message } from './transport.ts';
-export { AiError } from './transport.ts';
+export { AiError, AiTransport } from './transport.ts';
 export interface KeyProtection { available(): boolean; encrypt(text:string):Buffer; decrypt(bytes:Buffer):string }
 const ID=/^[a-zA-Z0-9-]{8,80}$/;
 function safeMessage(error:unknown):string {return error instanceof AiError?error.message:'Não foi possível conectar ao provedor. Confira se ele está disponível e tente novamente.';}
@@ -52,6 +52,7 @@ export class AiService {
           try{encryptedKey=this.crypto.encrypt(key).toString('base64');remembered=true;}catch{throw new AiError('Não foi possível proteger a chave. Desmarque “Lembrar chave” para usar só nesta sessão.');}
         }else notice='Sem chaveiro seguro disponível: a chave ficará só nesta sessão.';
       }
+      if(config.provider==='local'&&!config.model)config.model='Qwen3 1.7B local';
       await this.write('ai.json',JSON.stringify({...config,encryptedKey},null,2)+'\n');
       this.config=config;this.key=key;this.remembered=remembered;this.notice=notice;this.history=[];
       return this.view();

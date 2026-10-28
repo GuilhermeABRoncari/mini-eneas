@@ -1,11 +1,13 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, screen, ipcMain, session, safeStorage } = require('electron');
 const { AiService, AiError } = require('../dist/ai.cjs');
 const fs = require('node:fs');
+const {LocalTransport} = require('./local-ai.cjs');
+const {AudioService} = require('./audio.cjs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 app.setName('Mini Enéas');
-app.setPath('userData', path.join(app.getPath('appData'), 'mini-eneas'));
-let window, tray, saveTimer, ai;
+app.setPath('userData', process.env.MINI_ENEAS_DATA_DIR || path.join(app.getPath('appData'), 'mini-eneas'));
+let window, tray, saveTimer, ai, audio, localTransport;
 const studio = process.argv.includes('--studio');
 const page = path.join(__dirname, '..', 'dist', 'index.html');
 const settingsFile = () => path.join(app.getPath('userData'), 'window.json');
@@ -13,8 +15,8 @@ function readPosition() {
   try {
     const saved = JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
     if (!Number.isInteger(saved.x) || !Number.isInteger(saved.y)) return {};
-    const area = screen.getDisplayMatching({ x:saved.x,y:saved.y,width:420,height:650 }).workArea;
-    return { x:Math.max(area.x,Math.min(saved.x,area.x+Math.max(0,area.width-420))), y:Math.max(area.y,Math.min(saved.y,area.y+Math.max(0,area.height-650))) };
+    const area = screen.getDisplayMatching({ x:saved.x,y:saved.y,width:420,height:720 }).workArea;
+    return { x:Math.max(area.x,Math.min(saved.x,area.x+Math.max(0,area.width-420))), y:Math.max(area.y,Math.min(saved.y,area.y+Math.max(0,area.height-720))) };
   } catch { return {}; }
 }
 function savePosition() {
@@ -31,15 +33,19 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance',()=>{ if (window) { window.show(); window.restore(); window.focus(); } });
   app.whenReady().then(async()=>{
+    localTransport=new LocalTransport(path.join(__dirname,'..'));
     ai=new AiService(app.getPath('userData'),{
       // Electron 45: o backend síncrono é verificável; nunca aceitar basic_text.
       available:()=>safeStorage.isEncryptionAvailable() && (process.platform!=='linux'||['gnome_libsecret','kwallet','kwallet5','kwallet6'].includes(safeStorage.getSelectedStorageBackend())),
       encrypt:text=>safeStorage.encryptString(text),decrypt:bytes=>safeStorage.decryptString(bytes),
-    });
+    },localTransport);
+    if(!fs.existsSync(path.join(app.getPath('userData'),'ai.json'))&&fs.existsSync(path.join(__dirname,'../models/qwen3-1.7b-q4_k_m.gguf'))) {
+      await ai.save({provider:'local',model:'Qwen3 1.7B local',ollamaUrl:'http://127.0.0.1:11434',temperament:'dramatico',rememberKey:false});
+    }
     session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
     session.defaultSession.setPermissionCheckHandler(()=>false);
     const area = screen.getPrimaryDisplay().workArea;
-    window = new BrowserWindow({ width:studio ? Math.min(1160,area.width) : 420,height:studio ? Math.min(960,area.height) : Math.min(650,area.height),
+    window = new BrowserWindow({ width:studio ? Math.min(1160,area.width) : 420,height:studio ? Math.min(960,area.height) : Math.min(720,area.height),
       ...(studio ? {} : readPosition()), frame:false,transparent:!studio,backgroundColor:studio?'#e8e9df':'#00000000',hasShadow:false,
       resizable:studio,alwaysOnTop:!studio,show:false,autoHideMenuBar:true,
       webPreferences:{ preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:false },
@@ -55,19 +61,21 @@ else {
     ipcMain.on('mini:panel',(event,open)=>{
       if (!trusted(event) || typeof open!=='boolean' || studio) return;
       const work=screen.getDisplayMatching(window.getBounds()).workArea;
-      window.setSize(420,Math.min(open?940:650,work.height));
+      window.setSize(420,Math.min(open?940:720,work.height));
     });
     const handle=(channel,fn)=>ipcMain.handle(channel,async(event,...args)=>{
       if(!trusted(event))throw new Error('Origem não autorizada.');
       try{return await fn(...args);}catch(error){throw new Error(error instanceof AiError?error.message:'Não foi possível concluir. Confira as configurações e tente novamente.');}
     });
+    audio=new AudioService(path.join(__dirname,'..'),value=>{if(window&&!window.isDestroyed())window.webContents.send('mini:audio-event',value);});
+    handle('mini:audio-command',value=>audio.command(value));
     handle('mini:ai-settings',()=>ai.settings());
     handle('mini:ai-save',value=>ai.save(value));
     handle('mini:ai-models',()=>ai.models());
     handle('mini:ai-start',(id,text)=>ai.start(id,text,event=>{if(window&&!window.isDestroyed())window.webContents.send('mini:ai-event',event);}));
     handle('mini:ai-cancel',id=>{if(typeof id==='string')ai.cancel(id);});
     handle('mini:ai-clear',()=>ai.clear());
-    window.webContents.on('render-process-gone',()=>ai.dispose());
+    window.webContents.on('render-process-gone',()=>{ai.dispose();audio?.dispose();localTransport?.dispose();});
     // Ícone original gerado em memória; sem arquivos ou serviços externos.
     try {
       const width=32, pixels=Buffer.alloc(width*width*4);
@@ -82,6 +90,6 @@ else {
     } catch { /* Minimizar mantém o aplicativo acessível pela barra do sistema. */ }
     await window.loadURL(pathToFileURL(page).href+(studio?'?studio=1':''));
   });
-  app.on('before-quit',()=>{clearTimeout(saveTimer);savePosition();ai?.dispose();tray?.destroy();});
+  app.on('before-quit',()=>{clearTimeout(saveTimer);savePosition();ai?.dispose();audio?.dispose();localTransport?.dispose();tray?.destroy();});
   app.on('window-all-closed',()=>app.quit());
 }
